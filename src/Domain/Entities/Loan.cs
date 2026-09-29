@@ -6,12 +6,14 @@ public class Loan
     public Guid ClientId { get; private set; }
 
     public decimal LoanAmount { get; private set; }
+
+    // Taxa de juros mensal, representada na escala 0-100 (ex: 5m = 5% ao mês).
     public decimal MonthlyLoanInterest { get; private set; }
     public decimal BalanceOwed { get; private set; }
 
     // Cronograma de Originação: Metadados do contrato, data de emissão e prazo total de amortização.
     public DateTime LoanCreationDate { get; private set; }
-    public string AgreementNumber { get; private set; }
+    public string AgreementNumber { get; private set; } = string.Empty;
     public int TotalInstallments { get; private set; }
 
     public Loan(
@@ -21,12 +23,14 @@ public class Loan
         string agreementNumber,
         DateTime loanCreationDate,
         int totalInstallments,
-        DateTime referenceDate)
+        DateTime? referenceDate = null)
     {
         Id = Guid.NewGuid();
         ClientId = clientId;
 
-        Validate(loanAmount, monthlyLoanInterest, agreementNumber, totalInstallments, loanCreationDate, referenceDate);
+        DateTime dateValidation = referenceDate ?? DateTime.Today;
+
+        Validate(clientId, loanAmount, monthlyLoanInterest, agreementNumber, totalInstallments, loanCreationDate, dateValidation);
 
         LoanAmount = loanAmount;
         MonthlyLoanInterest = monthlyLoanInterest;
@@ -37,6 +41,7 @@ public class Loan
     }
 
     private static void Validate(
+        Guid clientId,
         decimal loanAmount,
         decimal monthlyLoanInterest,
         string agreementNumber,
@@ -44,13 +49,14 @@ public class Loan
         DateTime loanCreationDate,
         DateTime referenceDate)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(loanAmount, 0m, "O valor do empréstimo deve ser maior que zero.");
-        ArgumentOutOfRangeException.ThrowIfLessThan(monthlyLoanInterest, 0m, "A Taxa de Juros não pode ser menor que zero.");
+        ArgumentOutOfRangeException.ThrowIfEqual(clientId, Guid.Empty);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(loanAmount, 0m);
+        ArgumentOutOfRangeException.ThrowIfNegative(monthlyLoanInterest);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(totalInstallments);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(monthlyLoanInterest, 5m, "A Taxa de Juros mensal não pode ser maior que 5%.");
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(monthlyLoanInterest, 5m);
 
-        ArgumentException.ThrowIfNullOrWhiteSpace(agreementNumber, "O número do contrato de empréstimo é obrigatório.");
+        ArgumentException.ThrowIfNullOrWhiteSpace(agreementNumber);
 
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(loanCreationDate, referenceDate, "A data de criação não pode ser futura.");
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(loanCreationDate, referenceDate);
     }
 }
